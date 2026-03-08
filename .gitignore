@@ -49,3 +49,6 @@ Thumbs.db        # Windows thumbnail cache
 
 # TypeORM migrations (if generated)
 typeorm/migrations/
+
+# SQLite databases
+*.sqlite

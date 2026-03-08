@@ -60,7 +60,7 @@ export class User {
    * - Defaults to `UserRole.USER` (seller).
    */
   @Column({
-    type: 'enum',
+    type: 'simple-enum',
     enum: UserRole,
     default: UserRole.SELLER,
   })

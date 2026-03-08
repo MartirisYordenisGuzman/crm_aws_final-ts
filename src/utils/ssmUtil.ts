@@ -13,15 +13,37 @@ const ssmClient = new SSMClient({});
 /**
  * 📡 Fetches an SSM parameter directly from AWS SSM (bypassing cache).
  *
+ * - In offline mode, retrieves from environment variables using the parameter name as key.
+ *
  * @param name - The name of the SSM parameter.
  * @param withDecryption - Whether to decrypt secure parameters (default: true).
  * @returns A promise resolving to the parameter value.
- * @throws {RedisError} If fetching the parameter fails.
+ * @throws {BaseAppException} If fetching the parameter fails.
  */
 async function getParameterDirect(
   name: string,
   withDecryption: boolean = true,
 ): Promise<string> {
+  // 🏠 [Offline Mode] Check if running without AWS
+  if (process.env.OFFLINE_MODE === 'true') {
+    // Try exact match, then sanitized version (e.g., /your/db/host -> YOUR_DB_HOST)
+    const sanitizedKey = name
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toUpperCase();
+    const localValue = process.env[name] || process.env[sanitizedKey];
+
+    if (localValue) {
+      logger.info(
+        `🏠 [Offline] Retrieved parameter '${name}' from environment variable '${localValue === process.env[name] ? name : sanitizedKey}'.`,
+      );
+      return localValue;
+    }
+    logger.warn(
+      `⚠️ [Offline] Parameter '${name}' (checked keys: '${name}', '${sanitizedKey}') not found locally. Attempting AWS...`,
+    );
+  }
+
   try {
     logger.info(
       `🔍 [getParameterDirect] Fetching parameter '${name}' from SSM`,
